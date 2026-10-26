@@ -1,0 +1,49 @@
+-- Finora — schema reference (informational only, nothing to run)
+--
+-- An earlier version of this file ALTERed `profiles` to add onboarding
+-- columns (profession, income_type, ai_assistant_enabled, ...). That was
+-- wrong: it doesn't match the real database and caused
+--   PostgrestException: Could not find the 'hostel_rent' column of 'profiles'
+--   PostgrestException: Could not find the 'ai_assistant_enabled' column of 'profiles'
+-- because the Flutter code was writing onboarding answers into `profiles`.
+--
+-- The actual schema (already exists — do not run any ALTERs against it):
+--
+-- profiles
+--   id             uuid primary key references auth.users(id)
+--   full_name      text
+--   email          text
+--   phone_number   text
+--   profile_image  text
+--   created_at     timestamptz
+--   updated_at     timestamptz
+--
+-- onboarding
+--   id                          uuid primary key default gen_random_uuid()
+--   user_id                     uuid references auth.users(id)
+--   profession                  text
+--   income_type                 text
+--   monthly_income              numeric
+--   fixed_expenses              jsonb   -- object, e.g. {"Rent": true} — NOT a JSON array
+--   spending_habit              text
+--   financial_goal              text
+--   saving_percentage           numeric
+--   budget_discipline           text
+--   expense_tracking_frequency  text
+--   ai_budget_assistant         boolean default true
+--   persona                     text
+--   onboarding_completed        boolean default false
+--   created_at                  timestamptz
+--   updated_at                  timestamptz
+--
+-- The app now writes account info (full_name, email, phone_number,
+-- profile_image) to `profiles` only, via ProfileService
+-- (lib/services/profile_service.dart), and every onboarding answer to
+-- `onboarding` only, via OnboardingService
+-- (lib/services/onboarding_service.dart).
+--
+-- Optional, safe to run if you want faster/cleaner upserts by user_id:
+--   alter table public.onboarding
+--     add constraint onboarding_user_id_key unique (user_id);
+-- (Not required — OnboardingService works without it by doing an explicit
+-- select-then-insert/update instead of relying on this constraint.)
